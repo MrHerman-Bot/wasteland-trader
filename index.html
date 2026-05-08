@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Wasteland Trader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #e5e5e5;
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+        
+        /* Location-specific backgrounds */
+        body.newhaven {
+            background: linear-gradient(135deg, #1a2a3a 0%, #2d3d4d 100%);
+        }
+        body.ruins {
+            background: linear-gradient(135deg, #2a1a1a 0%, #3d2d2d 100%);
+        }
+        body.fortress {
+            background: linear-gradient(135deg, #1a1a2a 0%, #2d2d3d 100%);
+        }
+        body.oasis {
+            background: linear-gradient(135deg, #1a2a1a 0%, #2d3d2d 100%);
+        }
+        body.pit {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        
+        /* Password Login */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .login-overlay.hidden {
+            display: none;
+        }
+        
+        .login-box {
+            background: rgba(45, 45, 45, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #ff6b35;
+            max-width: 350px;
+            width: 90%;
+        }
+        
+        .login-box h2 {
+            color: #ff6b35;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .login-box .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid #404040;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            margin-bottom: 15px;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: #ff6b35;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .login-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .login-error {
+            color: #ef4444;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .login-error.show {
+            display: block;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-box {
+            background: rgba(45, 45, 45, 0.9);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #404040;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .stat-value.cash { color: #4ade80; }
+        .stat-value.health { color: #f87171; }
+        .stat-value.day { color: #60a5fa; }
+        
+        /* Location Header */
+        .location-header {
+            background: rgba(30, 58, 95, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 2px solid #3b82f6;
+        }
+        
+        .location-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 5px;
+        }
+        
+        .location-desc {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        
+        /* Travel Animation Overlay */
+        .travel-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .travel-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .travel-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b35;
+            margin-bottom: 20px;
+            animation: pulseText 1s ease infinite;
+        }
+        
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        
+        .travel-dots {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .travel-dot {
+            width: 12px;
+            height: 12px;
+            background: #ff6b35;
+            border-radius: 50%;
+            animation: bounce 0.6s ease infinite;
+        }
+        
+        .travel-dot:nth-child(2) { animation-delay: 0.2s; }
+        .travel-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        /* My Bag / Inventory Section */
+        .bag-section {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .bag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .bag-toggle {
+            background: #ff6b35;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .bag-empty {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        .bag-item {
+            background: rgba(26, 26, 26, 0.9);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #333;
+        }
+        
+        .bag-item-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .bag-item-icon {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .bag-item-info {
+            flex: 1;
+        }
+        
+        .bag-item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .bag-item-details {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .bag-item-prices {
+            text-align: right;
+            min-width: 90px;
+        }
+        
+        .paid-price {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .current-price {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        
+        .profit {
+            color: #22c55e;
+            font-size: 0.75rem;
+        }
+        
+        .loss {
+            color: #ef4444;
+            font-size: 0.75rem;
+        }
+        
+        .neutral {
+            color: #888;
+            font-size: 0.75rem;
+        }
+        
+        .bag-item-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+        
+        /* Market Section */
+        .market-section {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .item-row {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(26, 26, 26, 0.9);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #333;
+            transition: all 0.2s;
+            flex-wrap: wrap;
+        }
+        
+        .item-row:hover {
+            border-color: #ff6b35;
+            transform: translateX(2px);
+        }
+        
+        .item-header {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .item-price {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+        
+        .price-delta {
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        
+        .price-up {
+            color: #22c55e;
+        }
+        
+        .price-down {
+            color: #ef4444;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        
+        .btn-buy {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .btn-buy:hover {
+            background: #16a34a;
+        }
+        
+        .btn-buy:disabled {
+            background: #14532d;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn-sell {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-sell:hover {
+            background: #dc2626;
+        }
+        
+        .btn-sell:disabled {
+            background: #7f1d1d;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn-bulk {
+            background: #3b82f6;
+            color: white;
+            font-size: 0.75rem;
+            padding: 8px 10px;
+        }
+        
+        .btn-bulk:hover {
+            background: #2563eb;
+        }
+        
+        .btn-bulk:disabled {
+            background: #1e3a5f;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        /* Travel Section */
+        .travel-section {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .travel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .location-btn {
+            background: rgba(30, 58, 95, 0.9);
+            border: 2px solid #3b82f6;
+            color: #60a5fa;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .location-btn:hover {
+            background: #3b82f6;
+            color: white;
+            transform: scale(1.02);
+        }
+        
+        .location-btn.current {
+            background: #ff6b35;
+            border-color: #ff6b35;
+            color: white;
+        }
+        
+        .location-btn.current:hover {
+            background: #ff6b35;
+            cursor: default;
+            transform: none;
+        }
+        
+        .loc-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .loc-risk {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        
+        /* Current Event Box */
+        .current-event {
+            background: rgba(30, 58, 95, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .event-title {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .event-message {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        
+        .event-good { border-left-color: #22c55e; background: rgba(6, 78, 59, 0.9); }
+        .event-bad { border-left-color: #ef4444; background: rgba(69, 10, 10, 0.9); }
+        .event-info { border-left-color: #3b82f6; background: rgba(30, 58, 95, 0.9); }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: rgba(45, 45, 45, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            border: 2px solid #ff6b35;
+        }
+        
+        .modal h2 {
+            color: #ff6b35;
+            margin-bottom: 15px;
+        }
+        
+        .modal p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .modal-btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .modal-btn:hover {
+            background: #f7931e;
+        }
+        
+        .game-over-title {
+            font-size: 2rem;
+            color: #ff6b35;
+            margin-bottom: 10px;
+        }
+        
+        .final-score {
+            font-size: 1.5rem;
+            color: #4ade80;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>☢️ Wasteland Trader</h2>
+            <div class="subtitle">Secure Access Required</div>
+            <input type="password" class="login-input" id="passwordInput" placeholder="Enter access code" maxlength="20">
+            <button class="login-btn" onclick="checkPassword()">Enter</button>
+            <div class="login-error" id="loginError">Invalid access code. Try again.</div>
+        </div>
+    </div>
+    
+    <!-- Travel Animation Overlay -->
+    <div class="travel-overlay" id="travelOverlay">
+        <div class="travel-text">TRAVELING...</div>
+        <div class="travel-dots">
+            <div class="travel-dot"></div>
+            <div class="travel-dot"></div>
+            <div class="travel-dot"></div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>☢️ Wasteland Trader</h1>
+            <div class="subtitle">Buy Low. Sell High. Survive.</div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-box">
+                <div class="stat-label">Cash</div>
+                <div class="stat-value cash" id="cashDisplay">$2,000</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Health</div>
+                <div class="stat-value health" id="healthDisplay">100%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Day</div>
+                <div class="stat-value day" id="dayDisplay">1/30</div>
+            </div>
+        </div>
+        
+        <!-- Location -->
+        <div class="location-header">
+            <div class="location-name" id="locationName">New Haven</div>
+            <div class="location-desc" id="locationDesc">A relatively safe settlement with stable markets</div>
+        </div>
+        
+        <!-- Current Event (Only shows today's event) -->
+        <div id="currentEventBox"></div>
+        
+        <!-- My Bag / Inventory -->
+        <div class="bag-section" id="bagSection" style="display: none;">
+            <div class="bag-header">
+                <div class="section-title">🎒 MY BAG (<span id="bagWeight">0</span>/100)</div>
+                <button class="bag-toggle" onclick="toggleBag()">Hide</button>
+            </div>
+            <div id="bagContents">
+                <div class="bag-empty">Your bag is empty</div>
+            </div>
+        </div>
+        
+        <button class="bag-toggle" id="showBagBtn" onclick="toggleBag()" style="width: 100%; margin-bottom: 15px; padding: 12px;">🎒 Show My Bag</button>
+        
+        <!-- Market -->
+        <div class="market-section">
+            <div class="section-title">📦 MARKET PRICES</div>
+            <div id="marketList"></div>
+        </div>
+        
+        <!-- Travel -->
+        <div class="travel-section">
+            <div class="section-title">🗺️ TRAVEL TO</div>
+            <div class="travel-grid" id="travelGrid"></div>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="modalTitle">Event</h2>
+            <p id="modalText">Something happened!</p>
+            <button class="modal-btn" onclick="closeModal()">Continue</button>
+        </div>
+    </div>
+    
+    <script>
+        // Game State
+        let gameState = {
+            cash: 2000,
+            health: 100,
+            day: 1,
+            maxDays: 30,
+            currentLocation: 'newhaven',
+            inventory: {},
+            inventoryCost: {},
+            maxInventory: 100,
+            gameOver: false,
+            currentEvent: null,
+            showBag: false,
+            previousPrices: {},
+            locationArrivalDay: {}
+        };
+        
+        // Password protection (obfuscated)
+        const ACCESS_CODE = atob('d2FzdGVsYW5kMjAyNQ==');
+        
+        // Check password on page load
+        window.onload = function() {
+            // Check if already authenticated this session
+            if (sessionStorage.getItem('wastelandAuth') === 'true') {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                initGame();
+            }
+        };
+        
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            if (input === ACCESS_CODE) {
+                sessionStorage.setItem('wastelandAuth', 'true');
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('loginError').classList.remove('show');
+                initGame();
+            } else {
+                document.getElementById('loginError').classList.add('show');
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+        
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+        
+        // Locations with DRAMATICALLY different price ranges
+        const locations = {
+            newhaven: {
+                name: 'New Haven',
+                desc: 'A relatively safe settlement with stable markets',
+                risk: 'Low',
+                priceModifier: 1.0,
+                itemModifiers: {
+                    water: { min: 0.8, max: 1.2 },
+                    food: { min: 0.8, max: 1.2 },
+                    ammo: { min: 0.9, max: 1.3 },
+                    medkit: { min: 0.9, max: 1.3 },
+                    fuel: { min: 0.9, max: 1.3 },
+                    radpills: { min: 0.9, max: 1.4 },
+                    luxury: { min: 0.9, max: 1.3 },
+                    generator: { min: 0.9, max: 1.3 },
+                    medbay: { min: 0.9, max: 1.3 }
+                }
+            },
+            ruins: {
+                name: 'The Ruins',
+                desc: 'Dangerous zone with wildly volatile prices',
+                risk: 'High',
+                priceModifier: 1.5,
+                itemModifiers: {
+                    water: { min: 0.3, max: 2.5 },
+                    food: { min: 0.3, max: 2.5 },
+                    ammo: { min: 1.2, max: 2.8 },  // Always expensive for safety
+                    medkit: { min: 1.5, max: 3.0 },  // Medical supplies scarce
+                    fuel: { min: 0.4, max: 2.5 },
+                    radpills: { min: 2.0, max: 4.0 },  // Radiation zone = high demand
+                    luxury: { min: 0.2, max: 2.0 },
+                    generator: { min: 0.3, max: 2.5 },
+                    medbay: { min: 1.8, max: 3.5 }
+                }
+            },
+            fortress: {
+                name: 'Fortress',
+                desc: 'Military outpost - cheap ammo and weapons',
+                risk: 'Medium',
+                priceModifier: 0.9,
+                itemModifiers: {
+                    water: { min: 0.9, max: 1.4 },
+                    food: { min: 0.9, max: 1.4 },
+                    ammo: { min: 0.4, max: 0.9 },  // CHEAP ammo here!
+                    medkit: { min: 0.6, max: 1.1 },  // CHEAP medkits too
+                    fuel: { min: 0.8, max: 1.4 },
+                    radpills: { min: 0.8, max: 1.5 },
+                    luxury: { min: 0.7, max: 1.2 },
+                    generator: { min: 0.8, max: 1.3 },
+                    medbay: { min: 0.7, max: 1.2 }
+                }
+            },
+            oasis: {
+                name: 'Oasis',
+                desc: 'Desert settlement - water is king, food is scarce',
+                risk: 'Medium',
+                priceModifier: 1.3,
+                itemModifiers: {
+                    water: { min: 0.2, max: 0.8 },  // CHEAP water!
+                    food: { min: 1.5, max: 3.0 },  // EXPENSIVE food!
+                    ammo: { min: 1.0, max: 1.8 },
+                    medkit: { min: 1.2, max: 2.2 },
+                    fuel: { min: 1.3, max: 2.5 },  // Fuel needed for vehicles
+                    radpills: { min: 0.9, max: 1.8 },
+                    luxury: { min: 1.0, max: 2.0 },
+                    generator: { min: 1.2, max: 2.2 },
+                    medbay: { min: 1.3, max: 2.3 }
+                }
+            },
+            pit: {
+                name: 'The Pit',
+                desc: 'Lawless trading post - extreme risk and reward',
+                risk: 'Extreme',
+                priceModifier: 2.0,
+                itemModifiers: {
+                    water: { min: 0.1, max: 4.0 },  // Wildly variable
+                    food: { min: 0.1, max: 4.0 },
+                    ammo: { min: 0.5, max: 3.5 },
+                    medkit: { min: 0.8, max: 4.5 },
+                    fuel: { min: 0.2, max: 3.5 },
+                    radpills: { min: 1.5, max: 5.0 },
+                    luxury: { min: 2.0, max: 6.0 },  // Rich buyers here!
+                    generator: { min: 1.5, max: 5.0 },
+                    medbay: { min: 2.0, max: 6.0 }
+                }
+            }
+        };
+        
+        // Items with higher base prices
+        const items = {
+            water: {
+                name: 'Clean Water',
+                icon: '💧',
+                basePrice: 50,
+                weight: 1,
+                volatility: 0.5
+            },
+            food: {
+                name: 'Canned Food',
+                icon: '🥫',
+                basePrice: 85,
+                weight: 1,
+                volatility: 0.4
+            },
+            ammo: {
+                name: 'Ammunition',
+                icon: '🔫',
+                basePrice: 180,
+                weight: 1,
+                volatility: 0.6
+            },
+            medkit: {
+                name: 'Medkit',
+                icon: '💊',
+                basePrice: 350,
+                weight: 2,
+                volatility: 0.7
+            },
+            fuel: {
+                name: 'Fuel',
+                icon: '⛽',
+                basePrice: 250,
+                weight: 3,
+                volatility: 0.5
+            },
+            radpills: {
+                name: 'Rad Pills',
+                icon: '☢️',
+                basePrice: 650,
+                weight: 1,
+                volatility: 0.9
+            },
+            luxury: {
+                name: 'Luxury Items',
+                icon: '💎',
+                basePrice: 2500,
+                weight: 2,
+                volatility: 1.2
+            },
+            generator: {
+                name: 'Generator',
+                icon: '⚡',
+                basePrice: 4500,
+                weight: 8,
+                volatility: 0.8
+            },
+            medbay: {
+                name: 'Field Med-Bay',
+                icon: '🏥',
+                basePrice: 8500,
+                weight: 15,
+                volatility: 0.6
+            }
+        };
+        
+        // Current market prices
+        let marketPrices = {};
+        
+        // Initialize game
+        function initGame() {
+            // Reset inventory
+            gameState.inventory = {};
+            gameState.inventoryCost = {};
+            gameState.previousPrices = {};
+            gameState.locationArrivalDay = {};
+            gameState.locationArrivalDay['newhaven'] = 1;
+            
+            for (let key in items) {
+                gameState.inventory[key] = 0;
+                gameState.inventoryCost[key] = 0;
+            }
+            
+            gameState.currentEvent = { msg: "Welcome to the wasteland. Each location has different prices - exploit the differences!", type: 'info' };
+            
+            generateMarketPrices();
+            updateDisplay();
+            renderMarket();
+            renderBag();
+            renderTravelButtons();
+            updateBackground();
+        }
+        
+        // Generate market prices based on location and item-specific multipliers
+        function generateMarketPrices(eventModifiers = null) {
+            const location = locations[gameState.currentLocation];
+            
+            // Save previous prices for comparison
+            gameState.previousPrices = { ...marketPrices };
+            
+            for (let key in items) {
+                const item = items[key];
+                const modifiers = location.itemModifiers[key];
+                
+                // Base random range for this location
+                const randomFactor = modifiers.min + Math.random() * (modifiers.max - modifiers.min);
+                
+                // Apply event modifiers if present
+                let finalFactor = randomFactor;
+                if (eventModifiers && eventModifiers[key]) {
+                    finalFactor *= eventModifiers[key];
+                }
+                
+                marketPrices[key] = Math.round(item.basePrice * finalFactor);
+            }
+        }
+        
+        // Update background based on location
+        function updateBackground() {
+            document.body.className = gameState.currentLocation;
+        }
+        
+        // Toggle bag visibility
+        function toggleBag() {
+            gameState.showBag = !gameState.showBag;
+            const bagSection = document.getElementById('bagSection');
+            const showBtn = document.getElementById('showBagBtn');
+            
+            if (gameState.showBag) {
+                bagSection.style.display = 'block';
+                showBtn.style.display = 'none';
+            } else {
+                bagSection.style.display = 'none';
+                showBtn.style.display = 'block';
+            }
+            renderBag();
+        }
+        
+        // Get inventory used
+        function getInventoryUsed() {
+            let used = 0;
+            for (let key in gameState.inventory) {
+                used += gameState.inventory[key] * items[key].weight;
+            }
+            return used;
+        }
+        
+        // Get average cost per item
+        function getAvgCost(itemKey) {
+            const qty = gameState.inventory[itemKey];
+            const totalCost = gameState.inventoryCost[itemKey];
+            if (qty === 0) return 0;
+            return Math.round(totalCost / qty);
+        }
+        
+        // Update display
+        function updateDisplay() {
+            document.getElementById('cashDisplay').textContent = '$' + gameState.cash.toLocaleString();
+            document.getElementById('healthDisplay').textContent = gameState.health + '%';
+            document.getElementById('dayDisplay').textContent = gameState.day + '/' + gameState.maxDays;
+            
+            const loc = locations[gameState.currentLocation];
+            document.getElementById('locationName').textContent = loc.name;
+            document.getElementById('locationDesc').textContent = loc.desc;
+            
+            document.getElementById('bagWeight').textContent = getInventoryUsed();
+            
+            // Show current event
+            const eventBox = document.getElementById('currentEventBox');
+            if (gameState.currentEvent) {
+                eventBox.innerHTML = `
+                    <div class="current-event event-${gameState.currentEvent.type}">
+                        <div class="event-title">📰 Today's Event (Day ${gameState.day})</div>
+                        <div class="event-message">${gameState.currentEvent.msg}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Render bag/inventory with SELL buttons
+        function renderBag() {
+            const container = document.getElementById('bagContents');
+            const totalItems = Object.values(gameState.inventory).reduce((a, b) => a + b, 0);
+            
+            if (totalItems === 0) {
+                container.innerHTML = '<div class="bag-empty">Your bag is empty</div>';
+                return;
+            }
+            
+            let html = '';
+            for (let key in items) {
+                const qty = gameState.inventory[key];
+                if (qty === 0) continue;
+                
+                const item = items[key];
+                const avgCost = getAvgCost(key);
+                const currentPrice = marketPrices[key];
+                const profitLoss = currentPrice - avgCost;
+                const profitLossPercent = avgCost > 0 ? Math.round((profitLoss / avgCost) * 100) : 0;
+                
+                let profitClass = 'neutral';
+                let profitText = 'Even';
+                let priceColor = '#888';
+                if (profitLoss > 0) {
+                    profitClass = 'profit';
+                    profitText = `+${profitLossPercent}% (+$${profitLoss.toLocaleString()})`;
+                    priceColor = '#22c55e';
+                } else if (profitLoss < 0) {
+                    profitClass = 'loss';
+                    profitText = `${profitLossPercent}% ($${profitLoss.toLocaleString()})`;
+                    priceColor = '#ef4444';
+                }
+                
+                const canSell5 = qty >= 5;
+                const canSell10 = qty >= 10;
+                
+                html += `
+                    <div class="bag-item">
+                        <div class="bag-item-main">
+                            <div class="bag-item-icon">${item.icon}</div>
+                            <div class="bag-item-info">
+                                <div class="bag-item-name">${item.name}</div>
+                                <div class="bag-item-details">Qty: ${qty} | Weight: ${item.weight * qty}</div>
+                            </div>
+                            <div class="bag-item-prices">
+                                <div class="current-price" style="color: ${priceColor}">$${currentPrice.toLocaleString()}</div>
+                                <div class="paid-price">Paid: $${avgCost.toLocaleString()}</div>
+                                <div class="${profitClass}">${profitText}</div>
+                            </div>
+                        </div>
+                        <div class="bag-item-actions">
+                            <button class="btn btn-sell" onclick="sellItem('${key}', 1)">Sell 1 ($${(currentPrice).toLocaleString()})</button>
+                            ${canSell5 ? `<button class="btn btn-bulk" onclick="sellItem('${key}', 5)">Sell 5 ($${(currentPrice * 5).toLocaleString()})</button>` : ''}
+                            ${canSell10 ? `<button class="btn btn-bulk" onclick="sellItem('${key}', 10)">Sell 10 ($${(currentPrice * 10).toLocaleString()})</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        // Render market with price deltas
+        function renderMarket() {
+            const container = document.getElementById('marketList');
+            container.innerHTML = '';
+            
+            for (let key in items) {
+                const item = items[key];
+                const price = marketPrices[key];
+                const prevPrice = gameState.previousPrices[key];
+                const owned = gameState.inventory[key];
+                const weight = item.weight;
+                
+                // Calculate price change
+                let deltaHtml = '';
+                if (prevPrice && prevPrice > 0) {
+                    const change = price - prevPrice;
+                    const percent = Math.round((change / prevPrice) * 100);
+                    if (change > 0) {
+                        deltaHtml = `<div class="price-delta price-up">▲ +${percent}%</div>`;
+                    } else if (change < 0) {
+                        deltaHtml = `<div class="price-delta price-down">▼ ${percent}%</div>`;
+                    } else {
+                        deltaHtml = `<div class="price-delta">— 0%</div>`;
+                    }
+                }
+                
+                const canBuy = gameState.cash >= price && getInventoryUsed() + weight <= gameState.maxInventory;
+                const canBuy5 = gameState.cash >= price * 5 && getInventoryUsed() + weight * 5 <= gameState.maxInventory;
+                const canBuy10 = gameState.cash >= price * 10 && getInventoryUsed() + weight * 10 <= gameState.maxInventory;
+                
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <div class="item-header">
+                        <div class="item-icon">${item.icon}</div>
+                        <div class="item-info">
+                            <div class="item-name">${item.name}</div>
+                        </div>
+                        <div class="item-price">
+                            $${price.toLocaleString()}
+                            ${deltaHtml}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-buy" ${!canBuy ? 'disabled' : ''} onclick="buyItem('${key}', 1)">Buy 1</button>
+                        <button class="btn btn-bulk" ${!canBuy5 ? 'disabled' : ''} onclick="buyItem('${key}', 5)">x5</button>
+                        ${weight <= 2 ? `<button class="btn btn-bulk" ${!canBuy10 ? 'disabled' : ''} onclick="buyItem('${key}', 10)">x10</button>` : ''}
+                        ${owned > 0 ? `<span style="color: #22c55e; font-size: 0.8rem; margin-left: 10px;">Own: ${owned}</span>` : ''}
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+        }
+        
+        // Buy item
+        function buyItem(itemKey, quantity) {
+            const item = items[itemKey];
+            const price = marketPrices[itemKey];
+            const totalPrice = price * quantity;
+            const totalWeight = item.weight * quantity;
+            
+            if (gameState.cash >= totalPrice && getInventoryUsed() + totalWeight <= gameState.maxInventory) {
+                gameState.cash -= totalPrice;
+                gameState.inventory[itemKey] += quantity;
+                gameState.inventoryCost[itemKey] += totalPrice;
+                updateDisplay();
+                renderMarket();
+                if (gameState.showBag) renderBag();
+            }
+        }
+        
+        // Sell item
+        function sellItem(itemKey, quantity) {
+            if (gameState.inventory[itemKey] >= quantity) {
+                const price = marketPrices[itemKey];
+                const totalSellPrice = price * quantity;
+                
+                gameState.cash += totalSellPrice;
+                gameState.inventory[itemKey] -= quantity;
+                
+                // Adjust average cost
+                const currentQty = gameState.inventory[itemKey];
+                const currentTotalCost = gameState.inventoryCost[itemKey];
+                const soldCost = (currentTotalCost / (currentQty + quantity)) * quantity;
+                gameState.inventoryCost[itemKey] -= soldCost;
+                
+                updateDisplay();
+                renderMarket();
+                if (gameState.showBag) renderBag();
+            }
+        }
+        
+        // Render travel buttons
+        function renderTravelButtons() {
+            const container = document.getElementById('travelGrid');
+            container.innerHTML = '';
+            
+            for (let key in locations) {
+                const loc = locations[key];
+                const isCurrent = key === gameState.currentLocation;
+                
+                const btn = document.createElement('button');
+                btn.className = 'location-btn ' + (isCurrent ? 'current' : '');
+                btn.onclick = () => !isCurrent && travelTo(key);
+                btn.innerHTML = `
+                    <div class="loc-name">${loc.name}</div>
+                    <div class="loc-risk">Risk: ${loc.risk}</div>
+                `;
+                container.appendChild(btn);
+            }
+        }
+        
+        // Market events that actually affect prices
+        const marketEvents = {
+            waterShortage: {
+                msg: '💧 Water shortage! Prices spike 150-300%',
+                type: 'info',
+                modifiers: { water: 2.5 }
+            },
+            waterGlut: {
+                msg: '💧 Water convoy arrived! Prices drop 50%',
+                type: 'good',
+                modifiers: { water: 0.5 }
+            },
+            ammoSurplus: {
+                msg: '🔫 Military surplus sale! Ammo prices drop 40%',
+                type: 'good',
+                modifiers: { ammo: 0.6 }
+            },
+            ammoShortage: {
+                msg: '🔫 Ammo shortage - raiders bought up stock!',
+                type: 'bad',
+                modifiers: { ammo: 2.0 }
+            },
+            foodRot: {
+                msg: '🥫 Contamination scare! Food prices volatile',
+                type: 'bad',
+                modifiers: { food: 1.8 }
+            },
+            medkitRush: {
+                msg: '💊 Disease outbreak! Medkits triple in price',
+                type: 'info',
+                modifiers: { medkit: 3.0, radpills: 2.0 }
+            },
+            fuelConvoy: {
+                msg: '⛽ Fuel convoy delayed! Prices double',
+                type: 'bad',
+                modifiers: { fuel: 2.0 }
+            },
+            luxuryDemand: {
+                msg: '💎 Rich traders arrived! Luxury items in demand',
+                type: 'good',
+                modifiers: { luxury: 2.5, medbay: 2.0 }
+            },
+            radStorm: {
+                msg: '☢️ Radiation storm! Rad pills essential',
+                type: 'bad',
+                modifiers: { radpills: 3.5 }
+            },
+            generatorBoom: {
+                msg: '⚡ Power grid down! Generators valuable',
+                type: 'info',
+                modifiers: { generator: 2.5 }
+            }
+        };
+        
+        // Travel to location with REAL price events
+        function travelTo(locationKey) {
+            const overlay = document.getElementById('travelOverlay');
+            overlay.classList.add('active');
+            
+            setTimeout(() => {
+                const loc = locations[locationKey];
+                let eventModifiers = null;
+                
+                // Decide if market event happens (40% chance)
+                let eventOccurred = false;
+                if (Math.random() < 0.4) {
+                    const eventKeys = Object.keys(marketEvents);
+                    const randomEvent = marketEvents[eventKeys[Math.floor(Math.random() * eventKeys.length)]];
+                    gameState.currentEvent = { msg: randomEvent.msg, type: randomEvent.type };
+                    eventModifiers = randomEvent.modifiers;
+                    eventOccurred = true;
+                }
+                
+                // Travel risk events (separate from market)
+                const riskRoll = Math.random();
+                if (loc.risk === 'High' && riskRoll < 0.25 && !eventOccurred) {
+                    const events = [
+                        { msg: '⚠️ Raiders attacked! Lost $500 and took damage.', cash: -500, health: -15 },
+                        { msg: '⚠️ Ambushed by scavengers!', health: -10 },
+                        { msg: '🌪️ Sandstorm! Lost supplies.', health: -5 }
+                    ];
+                    const evt = events[Math.floor(Math.random() * events.length)];
+                    gameState.currentEvent = { ...evt, type: 'bad' };
+                    applyEvent(evt);
+                } else if (loc.risk === 'Extreme' && riskRoll < 0.35 && !eventOccurred) {
+                    const events = [
+                        { msg: '☠️ Gang ambush! Lost $1000 and heavy damage.', cash: -1000, health: -25 },
+                        { msg: '🔥 Vehicle breakdown! Repairs cost $800.', cash: -800 },
+                        { msg: '🦠 Contaminated water! Got sick.', health: -20 }
+                    ];
+                    const evt = events[Math.floor(Math.random() * events.length)];
+                    gameState.currentEvent = { ...evt, type: 'bad' };
+                    applyEvent(evt);
+                } else if (riskRoll < 0.12 && !eventOccurred) {
+                    const events = [
+                        { msg: '✅ Found abandoned cache! Gained $300.', cash: 300 },
+                        { msg: '🎁 Lucky find! Found medical supplies.', cash: 200, health: 10 },
+                        { msg: '💰 Stranger paid generously.', cash: 150 }
+                    ];
+                    const evt = events[Math.floor(Math.random() * events.length)];
+                    gameState.currentEvent = { ...evt, type: 'good' };
+                    applyEvent(evt);
+                }
+                
+                if (!eventOccurred && !gameState.currentEvent) {
+                    gameState.currentEvent = { 
+                        msg: `📍 Arrived at ${loc.name}. Market prices updated.`, 
+                        type: 'info' 
+                    };
+                }
+                
+                // Generate new prices WITH event modifiers
+                generateMarketPrices(eventModifiers);
+                
+                // Update state
+                gameState.currentLocation = locationKey;
+                gameState.locationArrivalDay[locationKey] = gameState.day;
+                gameState.day++;
+                
+                // Health regen
+                if (gameState.health < 100) {
+                    gameState.health = Math.min(100, gameState.health + 5);
+                }
+                
+                // Check game over
+                if (gameState.day > gameState.maxDays || gameState.health <= 0) {
+                    endGame();
+                }
+                
+                updateDisplay();
+                renderMarket();
+                if (gameState.showBag) renderBag();
+                renderTravelButtons();
+                updateBackground();
+                
+                overlay.classList.remove('active');
+            }, 1500);
+        }
+        
+        // Apply event effects
+        function applyEvent(evt) {
+            if (evt.cash) gameState.cash = Math.max(0, gameState.cash + evt.cash);
+            if (evt.health) gameState.health = Math.max(0, Math.min(100, gameState.health + evt.health));
+        }
+        
+        // Modal functions
+        function showModal(title, text) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalText').textContent = text;
+            document.getElementById('modal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            if (gameState.gameOver) {
+                resetGame();
+            }
+        }
+        
+        // End game
+        function endGame() {
+            gameState.gameOver = true;
+            let title, message;
+            
+            if (gameState.health <= 0) {
+                title = '☠️ You Died';
+                message = `Final cash: $${gameState.cash.toLocaleString()}`;
+            } else if (gameState.cash >= 1000000) {
+                title = '🏆 Wasteland King!';
+                message = `$${gameState.cash.toLocaleString()}! You're a legend!`;
+            } else if (gameState.cash >= 500000) {
+                title = '💰 Wealthy Trader';
+                message = `Score: $${gameState.cash.toLocaleString()}`;
+            } else if (gameState.cash >= 100000) {
+                title = '👍 Trader';
+                message = `Score: $${gameState.cash.toLocaleString()}`;
+            } else {
+                title = '📉 Survivor';
+                message = `Score: $${gameState.cash.toLocaleString()}`;
+            }
+            
+            showModal(title, message);
+        }
+        
+        // Reset game
+        function resetGame() {
+            gameState = {
+                cash: 2000,
+                health: 100,
+                day: 1,
+                maxDays: 30,
+                currentLocation: 'newhaven',
+                inventory: {},
+                inventoryCost: {},
+                maxInventory: 100,
+                gameOver: false,
+                currentEvent: null,
+                showBag: false,
+                previousPrices: {},
+                locationArrivalDay: {}
+            };
+            
+            document.getElementById('bagSection').style.display = 'none';
+            document.getElementById('showBagBtn').style.display = 'block';
+            
+            initGame();
+        }
+        
+        // Start game
+        initGame();
+    </script>
+</body>
+</html>
