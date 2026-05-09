@@ -37,6 +37,9 @@
         body.pit {
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
         }
+        body.coast {
+            background: linear-gradient(135deg, #1a2d3d 0%, #2d4d5d 100%);
+        }
         
         .container {
             max-width: 500px;
@@ -537,8 +540,8 @@
         
         .travel-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
         }
         
         .location-btn {
@@ -901,6 +904,23 @@
                     generator: { min: 1.5, max: 5.0 },
                     medbay: { min: 2.0, max: 6.0 }
                 }
+            },
+            coast: {
+                name: 'Coast',
+                desc: 'Fishing settlement - food is cheap, freshwater costs a fortune',
+                risk: 'Low',
+                priceModifier: 1.1,
+                itemModifiers: {
+                    water: { min: 2.0, max: 4.0 },  // EXPENSIVE freshwater!
+                    food: { min: 0.2, max: 0.7 },   // CHEAP fish!
+                    ammo: { min: 0.9, max: 1.4 },
+                    medkit: { min: 0.8, max: 1.3 },
+                    fuel: { min: 1.0, max: 1.5 },
+                    radpills: { min: 0.7, max: 1.2 },
+                    luxury: { min: 1.2, max: 2.0 },
+                    generator: { min: 1.0, max: 1.6 },
+                    medbay: { min: 1.1, max: 1.8 }
+                }
             }
         };
         
@@ -1136,9 +1156,9 @@
                             </div>
                         </div>
                         <div class="bag-item-actions">
-                            <button class="btn btn-sell" onclick="sellItem('${key}', 1)">Sell 1 ($${(currentPrice).toLocaleString()})</button>
-                            ${canSell5 ? `<button class="btn btn-bulk" onclick="sellItem('${key}', 5)">Sell 5 ($${(currentPrice * 5).toLocaleString()})</button>` : ''}
-                            ${canSell10 ? `<button class="btn btn-bulk" onclick="sellItem('${key}', 10)">Sell 10 ($${(currentPrice * 10).toLocaleString()})</button>` : ''}
+                            ${key === 'medkit' && gameState.health < 100 ? `<button class="btn btn-bulk" onclick="useMedkit()">Use (+25 HP)</button>` : ''}
+                            <button class="btn btn-sell" style="flex: 1;" onclick="showQuantityModal('${key}', 'sell')">Sell</button>
+                            <button class="btn btn-bulk" onclick="sellAll('${key}')">All ($${(currentPrice * qty).toLocaleString()})</button>
                         </div>
                     </div>
                 `;
@@ -1172,9 +1192,7 @@
                     }
                 }
                 
-                const canBuy = gameState.cash >= price && getInventoryUsed() + weight <= gameState.maxInventory;
-                const canBuy5 = gameState.cash >= price * 5 && getInventoryUsed() + weight * 5 <= gameState.maxInventory;
-                const canBuy10 = gameState.cash >= price * 10 && getInventoryUsed() + weight * 10 <= gameState.maxInventory;
+                const maxBuy = getMaxBuyable(key);
                 
                 const row = document.createElement('div');
                 row.className = 'item-row';
@@ -1190,9 +1208,8 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="btn btn-buy" ${!canBuy ? 'disabled' : ''} onclick="buyItem('${key}', 1)">Buy 1</button>
-                        <button class="btn btn-bulk" ${!canBuy5 ? 'disabled' : ''} onclick="buyItem('${key}', 5)">x5</button>
-                        ${weight <= 2 ? `<button class="btn btn-bulk" ${!canBuy10 ? 'disabled' : ''} onclick="buyItem('${key}', 10)">x10</button>` : ''}
+                        <button class="btn btn-buy" style="flex: 1;" ${!maxBuy ? 'disabled' : ''} onclick="showQuantityModal('${key}', 'buy')">Buy</button>
+                        ${maxBuy > 0 ? `<button class="btn btn-bulk" onclick="buyItem('${key}', ${maxBuy})">Max (${maxBuy})</button>` : ''}
                         ${owned > 0 ? `<span style="color: #22c55e; font-size: 0.8rem; margin-left: 10px;">Own: ${owned}</span>` : ''}
                     </div>
                 `;
@@ -1217,6 +1234,68 @@
             }
         }
         
+        // Calculate max buyable quantity
+        function getMaxBuyable(itemKey) {
+            const item = items[itemKey];
+            const price = marketPrices[itemKey];
+            const maxByCash = Math.floor(gameState.cash / price);
+            const availableWeight = gameState.maxInventory - getInventoryUsed();
+            const maxByWeight = Math.floor(availableWeight / item.weight);
+            return Math.max(0, Math.min(maxByCash, maxByWeight));
+        }
+        
+        // Show quantity input modal
+        function showQuantityModal(itemKey, action) {
+            const item = items[itemKey];
+            const price = marketPrices[itemKey];
+            const owned = gameState.inventory[itemKey];
+            const maxBuy = getMaxBuyable(itemKey);
+            
+            let maxQty, title, actionText;
+            if (action === 'buy') {
+                maxQty = maxBuy;
+                title = `Buy ${item.name}`;
+                actionText = `Buy ($${price.toLocaleString()} each)`;
+            } else {
+                maxQty = owned;
+                title = `Sell ${item.name}`;
+                actionText = `Sell ($${price.toLocaleString()} each)`;
+            }
+            
+            if (maxQty === 0) {
+                alert(action === 'buy' ? 'Not enough cash or inventory space!' : 'You don\'t have any to sell!');
+                return;
+            }
+            
+            const qty = prompt(`${title}\nPrice: $${price.toLocaleString()}\nMax ${action === 'buy' ? 'affordable' : 'owned'}: ${maxQty}\n\nEnter quantity:`, Math.min(10, maxQty));
+            
+            if (qty === null) return; // Cancelled
+            
+            const qtyNum = parseInt(qty);
+            if (isNaN(qtyNum) || qtyNum <= 0) {
+                alert('Please enter a valid number');
+                return;
+            }
+            if (qtyNum > maxQty) {
+                alert(`Maximum ${action === 'buy' ? 'you can buy' : 'you own'} is ${maxQty}`);
+                return;
+            }
+            
+            if (action === 'buy') {
+                buyItem(itemKey, qtyNum);
+            } else {
+                sellItem(itemKey, qtyNum);
+            }
+        }
+        
+        // Sell All
+        function sellAll(itemKey) {
+            const qty = gameState.inventory[itemKey];
+            if (qty > 0) {
+                sellItem(itemKey, qty);
+            }
+        }
+        
         // Sell item
         function sellItem(itemKey, quantity) {
             if (gameState.inventory[itemKey] >= quantity) {
@@ -1235,6 +1314,22 @@
                 updateDisplay();
                 renderMarket();
                 if (gameState.showBag) renderBag();
+            }
+        }
+        
+        // Use Medkit - restore health
+        function useMedkit() {
+            if (gameState.inventory.medkit >= 1 && gameState.health < 100) {
+                gameState.inventory.medkit -= 1;
+                gameState.health = Math.min(100, gameState.health + 25);
+                alert('💊 Used Medkit! Health restored to ' + gameState.health + '%');
+                updateDisplay();
+                if (gameState.showBag) renderBag();
+                renderMarket();
+            } else if (gameState.health >= 100) {
+                alert('Health is already at maximum!');
+            } else {
+                alert('No Medkits available!');
             }
         }
         
@@ -1377,10 +1472,7 @@
                 gameState.locationArrivalDay[locationKey] = gameState.day;
                 gameState.day++;
                 
-                // Health regen
-                if (gameState.health < 100) {
-                    gameState.health = Math.min(100, gameState.health + 5);
-                }
+                // No health regen - damage is permanent! Use Medkits or stay safe.
                 
                 // Check game over
                 if (gameState.day > gameState.maxDays || gameState.health <= 0) {
