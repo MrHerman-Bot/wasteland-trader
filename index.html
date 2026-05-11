@@ -138,23 +138,23 @@
         /* Header */
         .header {
             background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-            padding: 20px;
+            padding: 12px;
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-align: center;
             box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
         }
         
         .header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
+            font-size: 1.2rem;
+            margin-bottom: 3px;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
         .header .subtitle {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             opacity: 0.9;
         }
         
@@ -785,7 +785,10 @@
             currentEvent: null,
             showBag: false,
             previousPrices: {},
-            locationArrivalDay: {}
+            locationArrivalDay: {},
+            radiationExposed: false,
+            radiationDay: 0,
+            radiationCountdown: 0
         };
         
         // Password protection (obfuscated)
