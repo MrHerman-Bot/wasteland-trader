@@ -726,14 +726,11 @@
             </div>
         </div>
         
-        <!-- Location -->
-        <div class="location-header">
-            <div class="location-name" id="locationName">New Haven</div>
-            <div class="location-desc" id="locationDesc">A relatively safe settlement with stable markets</div>
+        <!-- Travel (Moved to top) -->
+        <div class="travel-section">
+            <div class="section-title">🗺️ TRAVEL TO</div>
+            <div class="travel-grid" id="travelGrid"></div>
         </div>
-        
-        <!-- Current Event (Only shows today's event) -->
-        <div id="currentEventBox"></div>
         
         <!-- My Bag / Inventory -->
         <div class="bag-section" id="bagSection" style="display: none;">
@@ -750,14 +747,7 @@
         
         <!-- Market -->
         <div class="market-section">
-            <div class="section-title">📦 MARKET PRICES</div>
             <div id="marketList"></div>
-        </div>
-        
-        <!-- Travel -->
-        <div class="travel-section">
-            <div class="section-title">🗺️ TRAVEL TO</div>
-            <div class="travel-grid" id="travelGrid"></div>
         </div>
     </div>
     
@@ -945,7 +935,7 @@
             },
             ammo: {
                 name: 'Ammunition',
-                icon: '🔫',
+                icon: '📦',
                 basePrice: 180,
                 weight: 1,
                 volatility: 0.6
@@ -965,15 +955,15 @@
                 volatility: 0.5
             },
             radpills: {
-                name: 'Rad Pills',
+                name: 'Radiation Pills',
                 icon: '☢️',
                 basePrice: 650,
                 weight: 1,
                 volatility: 0.9
             },
             luxury: {
-                name: 'Luxury Items',
-                icon: '💎',
+                name: 'Firearm',
+                icon: '🔫',
                 basePrice: 2500,
                 weight: 2,
                 volatility: 1.2
@@ -1089,22 +1079,16 @@
             document.getElementById('healthDisplay').textContent = gameState.health + '%';
             document.getElementById('dayDisplay').textContent = gameState.day + '/' + gameState.maxDays;
             
-            const loc = locations[gameState.currentLocation];
-            document.getElementById('locationName').textContent = loc.name;
-            document.getElementById('locationDesc').textContent = loc.desc;
+            // Show radiation indicator in health if exposed
+            if (gameState.radiationExposed) {
+                document.getElementById('healthDisplay').innerHTML = gameState.health + '% ☢️';
+                document.getElementById('healthDisplay').style.color = '#f97316';
+            } else {
+                document.getElementById('healthDisplay').textContent = gameState.health + '%';
+                document.getElementById('healthDisplay').style.color = '#f87171';
+            }
             
             document.getElementById('bagWeight').textContent = getInventoryUsed();
-            
-            // Show current event
-            const eventBox = document.getElementById('currentEventBox');
-            if (gameState.currentEvent) {
-                eventBox.innerHTML = `
-                    <div class="current-event event-${gameState.currentEvent.type}">
-                        <div class="event-title">📰 Today's Event (Day ${gameState.day})</div>
-                        <div class="event-message">${gameState.currentEvent.msg}</div>
-                    </div>
-                `;
-            }
         }
         
         // Render bag/inventory with SELL buttons
@@ -1159,7 +1143,9 @@
                             </div>
                         </div>
                         <div class="bag-item-actions">
-                            ${key === 'medkit' && gameState.health < 100 ? `<button class="btn btn-bulk" onclick="useMedkit()">Use (+25 HP)</button>` : ''}
+                            ${key === 'medkit' ? `<button class="btn btn-bulk" onclick="useMedkit()">Use (+5 HP)</button>` : ''}
+                            ${key === 'medbay' ? `<button class="btn btn-bulk" onclick="useMedbay()">Use (Full)</button>` : ''}
+                            ${key === 'radpills' ? `<button class="btn btn-bulk" onclick="useRadPills()">Use (Cure ☢️)</button>` : ''}
                             <button class="btn btn-sell" style="flex: 1;" onclick="showQuantityModal('${key}', 'sell')">Sell</button>
                             <button class="btn btn-bulk" onclick="sellAll('${key}')">All ($${(currentPrice * qty).toLocaleString()})</button>
                         </div>
@@ -1320,19 +1306,51 @@
             }
         }
         
-        // Use Medkit - restore health
+        // Use Medkit - restore 5% health
         function useMedkit() {
-            if (gameState.inventory.medkit >= 1 && gameState.health < 100) {
+            if (gameState.inventory.medkit >= 1) {
                 gameState.inventory.medkit -= 1;
-                gameState.health = Math.min(100, gameState.health + 25);
-                alert('💊 Used Medkit! Health restored to ' + gameState.health + '%');
+                gameState.health = Math.min(100, gameState.health + 5);
+                alert('💊 Used Medkit! Health +5% (now ' + gameState.health + '%)');
                 updateDisplay();
                 if (gameState.showBag) renderBag();
                 renderMarket();
-            } else if (gameState.health >= 100) {
-                alert('Health is already at maximum!');
             } else {
                 alert('No Medkits available!');
+            }
+        }
+        
+        // Use Field Med-Bay - restore to 100% health
+        function useMedbay() {
+            if (gameState.inventory.medbay >= 1) {
+                gameState.inventory.medbay -= 1;
+                gameState.health = 100;
+                alert('🏥 Used Field Med-Bay! Health fully restored to 100%');
+                updateDisplay();
+                if (gameState.showBag) renderBag();
+                renderMarket();
+            } else {
+                alert('No Field Med-Bays available!');
+            }
+        }
+        
+        // Use Radiation Pills - cure radiation exposure
+        function useRadPills() {
+            if (gameState.inventory.radpills >= 1) {
+                if (gameState.radiationExposed) {
+                    gameState.inventory.radpills -= 1;
+                    gameState.radiationExposed = false;
+                    gameState.radiationDay = 0;
+                    gameState.radiationCountdown = 0;
+                    alert('☢️ Used Radiation Pills! Radiation exposure cured.');
+                    updateDisplay();
+                    if (gameState.showBag) renderBag();
+                    renderMarket();
+                } else {
+                    alert('You are not exposed to radiation!');
+                }
+            } else {
+                alert('No Radiation Pills available!');
             }
         }
         
@@ -1460,11 +1478,37 @@
                     applyEvent(evt);
                 }
                 
-                if (!eventOccurred && !gameState.currentEvent) {
-                    gameState.currentEvent = { 
-                        msg: `📍 Arrived at ${loc.name}. Market prices updated.`, 
-                        type: 'info' 
+                // Radiation exposure event (20% chance at high-risk locations)
+                if (!gameState.radiationExposed && (locationKey === 'ruins' || locationKey === 'pit') && Math.random() < 0.2) {
+                    gameState.radiationExposed = true;
+                    gameState.radiationDay = 1;
+                    gameState.radiationCountdown = 1; // Will take 1 damage next day
+                    gameState.currentEvent = {
+                        msg: '☢️ RADIATION EXPOSURE! You feel sick. Take Radiation Pills immediately!',
+                        type: 'bad'
                     };
+                    eventOccurred = true;
+                }
+                
+                // Apply radiation damage if exposed (doubling each day: 1, 2, 4, 8, 16...)
+                if (gameState.radiationExposed) {
+                    const radiationDamage = Math.pow(2, gameState.radiationDay - 1);
+                    gameState.health = Math.max(0, gameState.health - radiationDamage);
+                    gameState.radiationDay++;
+                    gameState.currentEvent = {
+                        msg: `☢️ RADIATION POISONING! Lost ${radiationDamage}% health. Take pills NOW!`,
+                        type: 'bad'
+                    };
+                    eventOccurred = true;
+                }
+                
+                // Show event as popup modal if there is one
+                if (gameState.currentEvent) {
+                    showModal(
+                        gameState.currentEvent.type === 'bad' ? '⚠️ Event' : 
+                        gameState.currentEvent.type === 'good' ? '✅ Event' : '📍 Event',
+                        gameState.currentEvent.msg
+                    );
                 }
                 
                 // Generate new prices WITH event modifiers
@@ -1552,7 +1596,10 @@
                 currentEvent: null,
                 showBag: false,
                 previousPrices: {},
-                locationArrivalDay: {}
+                locationArrivalDay: {},
+                radiationExposed: false,
+                radiationDay: 0,
+                radiationCountdown: 0
             };
             
             document.getElementById('bagSection').style.display = 'none';
