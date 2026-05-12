@@ -679,6 +679,163 @@
             color: #4ade80;
             margin-bottom: 20px;
         }
+        
+        /* Main Menu */
+        .main-menu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+        
+        .main-menu-logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .main-menu-title {
+            font-size: 1.8rem;
+            color: #ff6b35;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        .main-menu-subtitle {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        
+        .main-menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .btn-menu {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        
+        .btn-menu:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        
+        .btn-menu-main {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+        }
+        
+        .btn-menu-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e5e5e5;
+            border: 2px solid #404040;
+        }
+        
+        /* Leaderboard */
+        .leaderboard-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+        
+        .leaderboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .leaderboard-header h2 {
+            font-size: 1.5rem;
+            color: #ff6b35;
+            margin-bottom: 5px;
+        }
+        
+        .leaderboard-header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .leaderboard-list {
+            background: rgba(45, 45, 45, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .leaderboard-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        
+        .leaderboard-rank {
+            font-weight: bold;
+            color: #ff6b35;
+            width: 30px;
+        }
+        
+        .leaderboard-info {
+            flex: 1;
+            text-align: left;
+            margin-left: 10px;
+        }
+        
+        .leaderboard-score {
+            font-weight: bold;
+            color: #4ade80;
+        }
+        
+        .leaderboard-empty {
+            color: #888;
+            text-align: center;
+            padding: 40px 20px;
+        }
+    
+        /* Game Container */
+        .game-container {
+            display: none;
+        }
+    
+    .back-button {
+        margin-top: 30px;
+        padding: 12px 30px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #404040;
+        color: #e5e5e5;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        }
+    
+    .back-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -703,6 +860,34 @@
         </div>
     </div>
     
+    <!-- Main Menu -->
+    <div class="main-menu" id="mainMenu">
+        <div class="main-menu-logo">☢️</div>
+        <div class="main-menu-title">Wasteland Trader</div>
+        <div class="main-menu-subtitle">Buy Low • Sell High • Survive</div>
+        
+        <div class="main-menu-buttons">
+            <button class="btn-menu btn-menu-main" onclick="startGame()">▶ Play</button>
+            <button class="btn-menu btn-menu" onclick="showLeaderboard()">🏆 Leaderboard</button>
+        </div>
+    </div>
+    
+    <!-- Leaderboard -->
+    <div class="leaderboard-container" id="leaderboardContainer">
+        <div class="leaderboard-header">
+            <h2>🐾 Personal Leaderboard</h2>
+            <p>Your best runs across all games</p>
+        </div>
+        
+        <div class="leaderboard-list" id="leaderboardList">
+            <div class="leaderboard-empty">No games played yet!</div>
+        </div>
+        
+        <button class="btn-menu btn-menu-secondary" onclick="backToMenu()" style="margin-top: 20px;">← Back to Menu</button>
+    </div>
+    
+    <!-- Game Container -->
+    <div class="game-container" id="gameContainer">
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -749,6 +934,7 @@
         <div class="market-section">
             <div id="marketList"></div>
         </div>
+    </div>
     </div>
     
     <!-- Modal -->
@@ -1502,13 +1688,16 @@
                     eventOccurred = true;
                 }
                 
-                // Show event as popup modal if there is one
+                // Show event as popup modal if there is one, OR show "No News"
                 if (gameState.currentEvent) {
                     showModal(
-                        gameState.currentEvent.type === 'bad' ? '⚠️ Event' : 
+                        gameState.currentEvent.type === 'bad' ? '⚠️ Event' :
                         gameState.currentEvent.type === 'good' ? '✅ Event' : '📍 Event',
                         gameState.currentEvent.msg
                     );
+                } else {
+                    // No event occurred - show "No News to Report"
+                    showModal('📰 Daily Report', 'No news to report. Safe travels.');
                 }
                 
                 // Generate new prices WITH event modifiers
@@ -1559,26 +1748,38 @@
         // End game
         function endGame() {
             gameState.gameOver = true;
+            
+            // Calculate inventory value at current market prices
+            let inventoryValue = 0;
+            for (let key in gameState.inventory) {
+                inventoryValue += gameState.inventory[key] * marketPrices[key];
+            }
+            
+            const finalScore = inventoryValue + gameState.cash;
+
+            // Save to localStorage leaderboard
+            saveToLeaderboard(finalScore);
+
             let title, message;
             
             if (gameState.health <= 0) {
                 title = '☠️ You Died';
-                message = `Final cash: $${gameState.cash.toLocaleString()}`;
-            } else if (gameState.cash >= 1000000) {
+                message = `Final Score: $${finalScore.toLocaleString()}`;
+            } else if (finalScore >= 1000000) {
                 title = '🏆 Wasteland King!';
-                message = `$${gameState.cash.toLocaleString()}! You're a legend!`;
-            } else if (gameState.cash >= 500000) {
+                message = `$${finalScore.toLocaleString()}! You're a legend!`;
+            } else if (finalScore >= 500000) {
                 title = '💰 Wealthy Trader';
-                message = `Score: $${gameState.cash.toLocaleString()}`;
-            } else if (gameState.cash >= 100000) {
+                message = `Final Score: $${finalScore.toLocaleString()}`;
+            } else if (finalScore >= 100000) {
                 title = '👍 Trader';
-                message = `Score: $${gameState.cash.toLocaleString()}`;
+                message = `Final Score: $${finalScore.toLocaleString()}`;
             } else {
                 title = '📉 Survivor';
-                message = `Score: $${gameState.cash.toLocaleString()}`;
+                message = `Final Score: $${finalScore.toLocaleString()}`;
             }
             
-            showModal(title, message);
+            showModal(title, message + '\n\n(Click OK to restart)');
         }
         
         // Reset game
@@ -1608,8 +1809,93 @@
             initGame();
         }
         
-        // Start game
-        initGame();
+        // ======================= LEADERBOARD =======================
+        
+        // Get leaderboard data from localStorage
+        function getLeaderboard() {
+            const stored = localStorage.getItem('wastelandLeaderboard');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            return [];
+        }
+        
+        // Save score to leaderboard
+        function saveToLeaderboard(score) {
+            const leaderboard = getLeaderboard();
+            const today = new Date().toLocaleDateString();
+            
+            leaderboard.push({
+                score: score,
+                date: today,
+                rank: getRank(score)
+            });
+            
+            // Sort by score descending, keep top 10
+            leaderboard.sort((a, b) => b.score - a.score);
+            if (leaderboard.length > 10) {
+                leaderboard.length = 10;
+            }
+            
+            localStorage.setItem('wastelandLeaderboard', JSON.stringify(leaderboard));
+        }
+        
+        // Get rank/title based on score
+        function getRank(score) {
+            if (score >= 1000000) return 'ud83cudfc6 Wasteland King';
+            if (score >= 500000) return 'ud83dudcb0 Wealthy Trader';
+            if (score >= 100000) return 'ud83dudc4d Trader';
+            return 'ud83dudcc9 Survivor';
+        }
+        
+        // Format score with commas
+        function formatScore(score) {
+            return '$' + score.toLocaleString();
+        }
+        
+        // ======================= MAIN MENU =======================
+        
+        function showMainMenu() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'flex';
+            document.getElementById('leaderboardContainer').style.display = 'none';
+        }
+        
+        function startGame() {
+            document.getElementById('gameContainer').style.display = 'block';
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('leaderboardContainer').style.display = 'none';
+        }
+        
+        function showLeaderboard() {
+            const scores = getLeaderboard();
+            const listDiv = document.getElementById('leaderboardList');
+            
+            if (scores.length === 0) {
+                listDiv.innerHTML = '<div class="leaderboard-empty">No games played yet! Complete a run to see your scores here.</div>';
+            } else {
+                let html = '';
+                scores.forEach((entry, index) => {
+                    html += `<div class="leaderboard-item">
+                        <div class="leaderboard-rank">${index + 1}.</div>
+                        <div class="leaderboard-info">${entry.rank}</div>
+                        <div class="leaderboard-score">${formatScore(entry.score)}</div>
+                    </div>`;
+                });
+                listDiv.innerHTML = html;
+            }
+            
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('leaderboardContainer').style.display = 'flex';
+        }
+        
+        function backToMenu() {
+            showMainMenu();
+        }
+        
+        // Start with main menu visible
+        showMainMenu();
     </script>
 </body>
 </html>
