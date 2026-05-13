@@ -1213,21 +1213,19 @@
             availableItems = shuffled.slice(0, numItems);
         }
         
-        // Generate market prices based on location and item-specific multipliers
+        // Generate market prices - simplified: all locations similar, events drive volatility
         function generateMarketPrices(eventModifiers = null) {
-            const location = locations[gameState.currentLocation];
-            
             // Save previous prices for comparison
             gameState.previousPrices = { ...marketPrices };
             
             for (let key in items) {
                 const item = items[key];
-                const modifiers = location.itemModifiers[key];
                 
-                // Base random range for this location
-                const randomFactor = modifiers.min + Math.random() * (modifiers.max - modifiers.min);
+                // Base random range (narrower, consistent across all locations)
+                // Small daily fluctuation: 0.8x to 1.2x of base price
+                const randomFactor = 0.8 + Math.random() * 0.4;
                 
-                // Apply event modifiers if present
+                // Apply event modifiers if present (this is where the real action is!)
                 let finalFactor = randomFactor;
                 if (eventModifiers && eventModifiers[key]) {
                     finalFactor *= eventModifiers[key];
