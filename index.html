@@ -1173,6 +1173,9 @@
         // Current market prices
         let marketPrices = {};
         
+        // Available items at current location (random 5-10 per location)
+        let availableItems = [];
+        
         // Initialize game
         function initGame() {
             // Reset inventory
@@ -1189,12 +1192,25 @@
             
             gameState.currentEvent = { msg: "Welcome to the wasteland. Each location has different prices - exploit the differences!", type: 'info' };
             
+            generateAvailableItems();
             generateMarketPrices();
             updateDisplay();
             renderMarket();
             renderBag();
             renderTravelButtons();
             updateBackground();
+        }
+        
+        // Generate available items for current location (5-10 random items)
+        function generateAvailableItems() {
+            const allItems = Object.keys(items);
+            const minItems = 5;
+            const maxItems = Math.min(10, allItems.length);
+            const numItems = Math.floor(Math.random() * (maxItems - minItems + 1)) + minItems;
+            
+            // Shuffle and pick random items
+            const shuffled = [...allItems].sort(() => Math.random() - 0.5);
+            availableItems = shuffled.slice(0, numItems);
         }
         
         // Generate market prices based on location and item-specific multipliers
@@ -1219,6 +1235,11 @@
                 
                 marketPrices[key] = Math.round(item.basePrice * finalFactor);
             }
+        }
+        
+        // Check if item is available to buy at current location
+        function isItemAvailable(itemKey) {
+            return availableItems.includes(itemKey);
         }
         
         // Update background based on location
@@ -1637,13 +1658,21 @@
                 const riskRoll = Math.random();
                 if (loc.risk === 'High' && riskRoll < 0.25 && !eventOccurred) {
                     const events = [
-                        { msg: '⚠️ Raiders attacked! Lost $500 and took damage.', cash: -500, health: -15 },
-                        { msg: '⚠️ Ambushed by scavengers!', health: -10 },
+                        { type: 'raiders' },  // Interactive raider battle (replaces static raider event)
                         { msg: '🌪️ Sandstorm! Lost supplies.', health: -5 }
                     ];
                     const evt = events[Math.floor(Math.random() * events.length)];
-                    gameState.currentEvent = { ...evt, type: 'bad' };
-                    applyEvent(evt);
+                    if (evt.type === 'raiders') {
+                        // Show travel overlay briefly then start battle
+                        setTimeout(() => {
+                            overlay.classList.remove('active');
+                            startRaiderBattle(locationKey, eventModifiers);
+                        }, 800);
+                        return; // Battle handles its own flow
+                    } else {
+                        gameState.currentEvent = { ...evt, type: 'bad' };
+                        applyEvent(evt);
+                    }
                 } else if (loc.risk === 'Extreme' && riskRoll < 0.35 && !eventOccurred) {
                     const events = [
                         { msg: '☠️ Gang ambush! Lost $1000 and heavy damage.', cash: -1000, health: -25 },
@@ -1656,7 +1685,7 @@
                 } else if (riskRoll < 0.12 && !eventOccurred) {
                     const events = [
                         { msg: '✅ Found abandoned cache! Gained $300.', cash: 300 },
-                        { msg: '🎁 Lucky find! Found medical supplies.', cash: 200, health: 10 },
+                        { msg: '🎁 Lucky find! Found 1 Medkit and $200.', cash: 200, medkit: 1 },
                         { msg: '💰 Stranger paid generously.', cash: 150 }
                     ];
                     const evt = events[Math.floor(Math.random() * events.length)];
@@ -1700,27 +1729,8 @@
                     showModal('📰 Daily Report', 'No news to report. Safe travels.');
                 }
                 
-                // Generate new prices WITH event modifiers
-                generateMarketPrices(eventModifiers);
-                
-                // Update state
-                gameState.currentLocation = locationKey;
-                gameState.locationArrivalDay[locationKey] = gameState.day;
-                gameState.day++;
-                
-                // No health regen - damage is permanent! Use Medkits or stay safe.
-                
-                // Check game over
-                if (gameState.day > gameState.maxDays || gameState.health <= 0) {
-                    endGame();
-                }
-                
-                updateDisplay();
-                renderMarket();
-                if (gameState.showBag) renderBag();
-                renderTravelButtons();
-                updateBackground();
-                
+                // Complete the travel
+                completeTravel(locationKey, eventModifiers);
                 overlay.classList.remove('active');
             }, 1500);
         }
@@ -1729,7 +1739,186 @@
         function applyEvent(evt) {
             if (evt.cash) gameState.cash = Math.max(0, gameState.cash + evt.cash);
             if (evt.health) gameState.health = Math.max(0, Math.min(100, gameState.health + evt.health));
+            if (evt.medkit && getInventoryUsed() + items.medkit.weight <= gameState.maxInventory) {
+                gameState.inventory.medkit += evt.medkit;
+                gameState.inventoryCost.medkit += marketPrices.medkit * evt.medkit;
+            }
         }
+        
+        // ======================= RAIDER BATTLE SYSTEM =======================
+        
+        function startRaiderBattle(destinationKey, eventModifiers) {
+            const raiderCount = Math.floor(Math.random() * 3) + 1; // 1-3 raiders
+            showRaiderModal(raiderCount, destinationKey, eventModifiers);
+        }
+        
+        function showRaiderModal(raiders, destinationKey, eventModifiers) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const text = document.getElementById('modalText');
+            const btn = modal.querySelector('.modal-btn');
+            
+            title.textContent = '⚠️ Raiders attacked!';
+            text.innerHTML = `${raiders} raider${raiders > 1 ? 's' : ''} block your path!<br><br>What do you do?`;
+            
+            // Replace Continue button with Fight/Run buttons
+            btn.style.display = 'none';
+            
+            // Remove old buttons if they exist
+            const oldButtons = modal.querySelector('.battle-buttons');
+            if (oldButtons) oldButtons.remove();
+            
+            const battleDiv = document.createElement('div');
+            battleDiv.className = 'battle-buttons';
+            battleDiv.style.display = 'flex';
+            battleDiv.style.gap = '15px';
+            battleDiv.style.justifyContent = 'center';
+            battleDiv.style.marginTop = '20px';
+            
+            const fightBtn = document.createElement('button');
+            fightBtn.className = 'modal-btn';
+            fightBtn.textContent = '⚔️ Fight';
+            fightBtn.onclick = () => resolveBattle('fight', raiders, destinationKey, eventModifiers);
+            
+            const runBtn = document.createElement('button');
+            runBtn.className = 'modal-btn';
+            runBtn.style.background = '#666';
+            runBtn.textContent = '🏃 Run';
+            runBtn.onclick = () => resolveBattle('run', raiders, destinationKey, eventModifiers);
+            
+            battleDiv.appendChild(fightBtn);
+            battleDiv.appendChild(runBtn);
+            text.parentNode.appendChild(battleDiv);
+            
+            modal.classList.add('active');
+        }
+        
+        function resolveBattle(action, raiders, destinationKey, eventModifiers) {
+            const modal = document.getElementById('modal');
+            const text = document.getElementById('modalText');
+            const battleDiv = modal.querySelector('.battle-buttons');
+            const btn = modal.querySelector('.modal-btn');
+            
+            let resultMsg = '';
+            let continueTravel = true;
+            
+            if (action === 'fight') {
+                // Fight odds
+                let winChance, reward;
+                if (raiders === 3) {
+                    winChance = 0.20;
+                    reward = 300;
+                } else if (raiders === 2) {
+                    winChance = 0.40;
+                    reward = 200;
+                } else {
+                    winChance = 0.60;
+                    reward = 100;
+                }
+                
+                if (Math.random() < winChance) {
+                    // Win!
+                    gameState.cash += reward;
+                    resultMsg = `⚔️ Victory! You defeated ${raiders} raider${raiders > 1 ? 's' : ''} and found $${reward}!`;
+                    gameState.currentEvent = { msg: resultMsg, type: 'good' };
+                } else {
+                    // Lose
+                    const healthLoss = raiders === 3 ? 15 : raiders === 2 ? 10 : 5;
+                    const cashLoss = raiders === 3 ? 500 : raiders === 2 ? 300 : 150;
+                    gameState.health = Math.max(0, gameState.health - healthLoss);
+                    gameState.cash = Math.max(0, gameState.cash - cashLoss);
+                    resultMsg = `💀 Defeated! Lost ${healthLoss} HP and $${cashLoss}.`;
+                    gameState.currentEvent = { msg: resultMsg, type: 'bad' };
+                }
+            } else {
+                // Try to run
+                let escapeChance, escapedCount;
+                if (raiders === 3) {
+                    escapeChance = 0.60;
+                    escapedCount = 3;
+                } else if (raiders === 2) {
+                    escapeChance = 0.80;
+                    escapedCount = 2;
+                } else {
+                    escapeChance = 1.00; // 100% escape from 1 raider
+                    escapedCount = 1;
+                    // But 20% chance to drop an item when running from 1
+                    if (Math.random() < 0.20) {
+                        const itemKeys = Object.keys(gameState.inventory).filter(k => gameState.inventory[k] > 0);
+                        if (itemKeys.length > 0) {
+                            const dropped = itemKeys[Math.floor(Math.random() * itemKeys.length)];
+                            gameState.inventory[dropped]--;
+                            resultMsg = `🏃 Escaped! But you dropped 1 ${items[dropped].name} while running.`;
+                            gameState.currentEvent = { msg: resultMsg, type: 'bad' };
+                            continueTravel = true;
+                        } else {
+                            resultMsg = `🏃 Escaped successfully!`;
+                            gameState.currentEvent = { msg: resultMsg, type: 'good' };
+                        }
+                        text.innerHTML = resultMsg;
+                        if (battleDiv) battleDiv.remove();
+                        btn.style.display = 'block';
+                        btn.onclick = () => finishBattle(destinationKey, eventModifiers);
+                        return;
+                    }
+                }
+                
+                if (Math.random() < escapeChance) {
+                    // Escape all
+                    resultMsg = `🏃 Escaped all ${escapedCount} raiders!`;
+                    gameState.currentEvent = { msg: resultMsg, type: 'good' };
+                } else {
+                    // Failed escape, lose raiders and retry
+                    const caught = raiders - escapedCount;
+                    if (caught > 0) {
+                        // Continue with fewer raiders
+                        battleDiv.remove();
+                        showRaiderModal(caught, destinationKey, eventModifiers);
+                        return;
+                    } else {
+                        resultMsg = `🏃 Got away, barely!`;
+                        gameState.currentEvent = { msg: resultMsg, type: 'good' };
+                    }
+                }
+            }
+            
+            // Show result
+            text.innerHTML = resultMsg;
+            if (battleDiv) battleDiv.remove();
+            btn.style.display = 'block';
+            btn.onclick = () => finishBattle(destinationKey, eventModifiers);
+        }
+        
+        function finishBattle(destinationKey, eventModifiers) {
+            closeModal();
+            // Complete the travel
+            completeTravel(destinationKey, eventModifiers);
+        }
+        
+        function completeTravel(locationKey, eventModifiers) {
+            const loc = locations[locationKey];
+            
+            // Generate new prices WITH event modifiers
+            generateMarketPrices(eventModifiers);
+            
+            // Update state
+            gameState.currentLocation = locationKey;
+            gameState.locationArrivalDay[locationKey] = gameState.day;
+            gameState.day++;
+            
+            // Check game over
+            if (gameState.day > gameState.maxDays || gameState.health <= 0) {
+                endGame();
+            }
+            
+            updateDisplay();
+            renderMarket();
+            if (gameState.showBag) renderBag();
+            renderTravelButtons();
+            updateBackground();
+        }
+        
+        // ======================= END RAIDER BATTLE =======================
         
         // Modal functions
         function showModal(title, text) {
