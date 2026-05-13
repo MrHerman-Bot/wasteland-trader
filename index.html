@@ -1316,24 +1316,7 @@
                 const item = items[key];
                 const avgCost = getAvgCost(key);
                 const currentPrice = marketPrices[key];
-                const profitLoss = currentPrice - avgCost;
-                const profitLossPercent = avgCost > 0 ? Math.round((profitLoss / avgCost) * 100) : 0;
-                
-                let profitClass = 'neutral';
-                let profitText = 'Even';
-                let priceColor = '#888';
-                if (profitLoss > 0) {
-                    profitClass = 'profit';
-                    profitText = `+${profitLossPercent}% (+$${profitLoss.toLocaleString()})`;
-                    priceColor = '#22c55e';
-                } else if (profitLoss < 0) {
-                    profitClass = 'loss';
-                    profitText = `${profitLossPercent}% ($${profitLoss.toLocaleString()})`;
-                    priceColor = '#ef4444';
-                }
-                
-                const canSell5 = qty >= 5;
-                const canSell10 = qty >= 10;
+                const canSellHere = availableItems.includes(key); // Check if item can be sold here
                 
                 html += `
                     <div class="bag-item">
@@ -1344,17 +1327,19 @@
                                 <div class="bag-item-details">Qty: ${qty} | Weight: ${item.weight * qty}</div>
                             </div>
                             <div class="bag-item-prices">
-                                <div class="current-price" style="color: ${priceColor}">$${currentPrice.toLocaleString()}</div>
+                                <div class="current-price">$${currentPrice.toLocaleString()}</div>
                                 <div class="paid-price">Paid: $${avgCost.toLocaleString()}</div>
-                                <div class="${profitClass}">${profitText}</div>
+                                ${!canSellHere ? '<div style="color: #666; font-size: 0.8rem;">Not buying here</div>' : ''}
                             </div>
                         </div>
                         <div class="bag-item-actions">
                             ${key === 'medkit' ? `<button class="btn btn-bulk" onclick="useMedkit()">Use (+5 HP)</button>` : ''}
                             ${key === 'medbay' ? `<button class="btn btn-bulk" onclick="useMedbay()">Use (Full)</button>` : ''}
                             ${key === 'radpills' ? `<button class="btn btn-bulk" onclick="useRadPills()">Use (Cure ☢️)</button>` : ''}
-                            <button class="btn btn-sell" style="flex: 1;" onclick="showQuantityModal('${key}', 'sell')">Sell</button>
-                            <button class="btn btn-bulk" onclick="sellAll('${key}')">All ($${(currentPrice * qty).toLocaleString()})</button>
+                            ${canSellHere ? `
+                                <button class="btn btn-sell" style="flex: 1;" onclick="showQuantityModal('${key}', 'sell')">Sell</button>
+                                <button class="btn btn-bulk" onclick="sellAll('${key}')">All ($${(currentPrice * qty).toLocaleString()})</button>
+                            ` : '<button class="btn btn-bulk" disabled style="flex: 1; opacity: 0.5;">No buyers</button>'}
                         </div>
                     </div>
                 `;
@@ -1368,6 +1353,9 @@
             container.innerHTML = '';
             
             for (let key in items) {
+                // Only show items available at this location
+                if (!availableItems.includes(key)) continue;
+                
                 const item = items[key];
                 const price = marketPrices[key];
                 const prevPrice = gameState.previousPrices[key];
@@ -1400,7 +1388,6 @@
                         </div>
                         <div class="item-price">
                             $${price.toLocaleString()}
-                            ${deltaHtml}
                         </div>
                     </div>
                     <div class="item-actions">
@@ -1639,6 +1626,9 @@
         function travelTo(locationKey) {
             const overlay = document.getElementById('travelOverlay');
             overlay.classList.add('active');
+            
+            // Reset current event before travel
+            gameState.currentEvent = null;
             
             setTimeout(() => {
                 const loc = locations[locationKey];
@@ -1896,7 +1886,8 @@
         }
         
         function completeTravel(locationKey, eventModifiers) {
-            const loc = locations[locationKey];
+            // Generate new available items for new location
+            generateAvailableItems();
             
             // Generate new prices WITH event modifiers
             generateMarketPrices(eventModifiers);
