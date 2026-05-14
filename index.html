@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#1a1a1a">
     <title>Wasteland Trader</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,38 +15,68 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            background: #0d0d0d;
             min-height: 100vh;
-            color: #e5e5e5;
+            color: #c9c9c9;
             overflow-x: hidden;
-            transition: background 0.5s ease;
+            position: relative;
         }
         
-        /* Location-specific backgrounds */
+        /* CRT Scanline & Grain Overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0,0,0,0.15),
+                    rgba(0,0,0,0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                ),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9998;
+        }
+        
+        /* Vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+            pointer-events: none;
+            z-index: 9997;
+        }
+        
+        /* Location themes with color grading */
         body.newhaven {
-            background: linear-gradient(135deg, #1a2a3a 0%, #2d3d4d 100%);
+            background: linear-gradient(180deg, #1a2332 0%, #0f1419 100%);
         }
         body.ruins {
-            background: linear-gradient(135deg, #2a1a1a 0%, #3d2d2d 100%);
+            background: linear-gradient(180deg, #2a1f1a 0%, #1a1210 100%);
         }
         body.fortress {
-            background: linear-gradient(135deg, #1a1a2a 0%, #2d2d3d 100%);
+            background: linear-gradient(180deg, #1a1a28 0%, #0f0f18 100%);
         }
         body.oasis {
-            background: linear-gradient(135deg, #1a2a1a 0%, #2d3d2d 100%);
+            background: linear-gradient(180deg, #1a2820 0%, #0f1a14 100%);
         }
         body.pit {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            background: linear-gradient(180deg, #0f0f0f 0%, #050505 100%);
         }
         body.coast {
-            background: linear-gradient(135deg, #1a2d3d 0%, #2d4d5d 100%);
+            background: linear-gradient(180deg, #1a2838 0%, #0f1a24 100%);
         }
         
         .container {
             max-width: 500px;
             margin: 0 auto;
-            padding: 10px;
+            padding: 12px;
+            position: relative;
+            z-index: 1;
         }
         
         /* Password Login */
