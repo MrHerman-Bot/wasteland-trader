@@ -1559,8 +1559,7 @@
                 btn.className = 'location-btn ' + (isCurrent ? 'current' : '');
                 btn.onclick = () => !isCurrent && travelTo(key);
                 btn.innerHTML = `
-                    <div class="loc-name">${loc.name}</div>
-                    <div class="loc-risk">Risk: ${loc.risk}</div>
+                    ${loc.name}
                 `;
                 container.appendChild(btn);
             }
