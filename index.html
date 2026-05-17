@@ -1755,6 +1755,7 @@
                 
                 // Decide if market event happens (40% chance)
                 let eventOccurred = false;
+                const riskRoll = Math.random();
                 if (Math.random() < 0.4) {
                     const eventKeys = Object.keys(marketEvents);
                     const randomEvent = marketEvents[eventKeys[Math.floor(Math.random() * eventKeys.length)]];
@@ -1771,7 +1772,6 @@
                 }
                 
                 // Travel risk events (separate from market)
-                const riskRoll = Math.random();
                 if (loc.risk === 'High' && riskRoll < 0.45 && !eventOccurred) {
                     const events = [
                         { type: 'raiders' },  // Interactive raider battle (replaces static raider event)
