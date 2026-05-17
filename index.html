@@ -575,16 +575,17 @@
         }
         
         .btn-sell {
-            background: #ef4444;
+            background: linear-gradient(135deg, #9f2b2b 0%, #7f1d1d 100%);
             color: white;
+            border: 1px solid rgba(127, 29, 29, 0.8);
         }
         
         .btn-sell:hover {
-            background: #dc2626;
+            background: linear-gradient(135deg, #b83a3a 0%, #9f2b2b 100%);
         }
         
         .btn-sell:disabled {
-            background: #7f1d1d;
+            background: linear-gradient(135deg, #5c1a1a 0%, #3d1212 100%);
             color: #666;
             cursor: not-allowed;
         }
@@ -762,6 +763,8 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
+            display: block;
+            margin: 0 auto;
         }
         
         .modal-btn:hover {
@@ -1854,11 +1857,27 @@
         
         // Apply event effects
         function applyEvent(evt) {
-            if (evt.cash) gameState.cash = Math.max(0, gameState.cash + evt.cash);
-            if (evt.health) gameState.health = Math.max(0, Math.min(100, gameState.health + evt.health));
+            if (evt.cash) {
+                gameState.cash = Math.max(0, gameState.cash + evt.cash);
+                checkBankruptcy();
+            }
+            if (evt.health) {
+                gameState.health = Math.max(0, Math.min(100, gameState.health + evt.health));
+                if (gameState.health <= 0) {
+                    endGame();
+                    return;
+                }
+            }
             if (evt.medkit && getInventoryUsed() + items.medkit.weight <= gameState.maxInventory) {
                 gameState.inventory.medkit += evt.medkit;
                 gameState.inventoryCost.medkit += marketPrices.medkit * evt.medkit;
+            }
+        }
+        
+        // Check if player is bankrupt (no cash and no inventory)
+        function checkBankruptcy() {
+            if (gameState.cash <= 0 && getInventoryUsed() === 0) {
+                endGame();
             }
         }
         
@@ -2004,6 +2023,16 @@
             if (battleDiv) battleDiv.remove();
             btn.style.display = 'block';
             btn.onclick = () => finishBattle(destinationKey, eventModifiers);
+            
+            // Check for game over conditions after battle
+            if (gameState.health <= 0) {
+                endGame();
+                return;
+            }
+            if (gameState.cash <= 0 && getInventoryUsed() === 0) {
+                endGame();
+                return;
+            }
         }
         
         function finishBattle(destinationKey, eventModifiers) {
@@ -2071,7 +2100,10 @@
             
             if (gameState.health <= 0) {
                 title = '☠️ You Died';
-                message = `Final Score: $${finalScore.toLocaleString()}`;
+                message = `Your health reached zero. Final Score: $${finalScore.toLocaleString()}`;
+            } else if (gameState.cash <= 0 && getInventoryUsed() === 0) {
+                title = '💸 Bankrupt';
+                message = `You ran out of money and supplies. Final Score: $${finalScore.toLocaleString()}`;
             } else if (finalScore >= 1000000) {
                 title = '🏆 Wasteland King!';
                 message = `$${finalScore.toLocaleString()}! You're a legend!`;
@@ -2135,7 +2167,8 @@
             leaderboard.push({
                 score: score,
                 date: today,
-                rank: getRank(score)
+                rank: getRank(score),
+                days: gameState.day
             });
             
             // Sort by score descending, keep top 10
@@ -2185,7 +2218,7 @@
                 scores.forEach((entry, index) => {
                     html += `<div class="leaderboard-item">
                         <div class="leaderboard-rank">${index + 1}.</div>
-                        <div class="leaderboard-info">${entry.rank}</div>
+                        <div class="leaderboard-info">${entry.rank} <span style="color:#888;font-size:0.8rem">| Day ${entry.days || '?'}</span></div>
                         <div class="leaderboard-score">${formatScore(entry.score)}</div>
                     </div>`;
                 });
