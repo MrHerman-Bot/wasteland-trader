@@ -2042,6 +2042,9 @@
         }
         
         function completeTravel(locationKey, eventModifiers) {
+            // Increment day FIRST (this is a new day of travel)
+            gameState.day++;
+            
             // Generate new available items for new location
             generateAvailableItems();
             
@@ -2051,7 +2054,6 @@
             // Update state
             gameState.currentLocation = locationKey;
             gameState.locationArrivalDay[locationKey] = gameState.day;
-            gameState.day++;
             
             // Check game over
             if (gameState.day > gameState.maxDays || gameState.health <= 0) {
@@ -2085,6 +2087,10 @@
         function endGame() {
             gameState.gameOver = true;
             
+            // Update modal button to say OK
+            const modalBtn = document.querySelector('.modal-btn');
+            modalBtn.textContent = 'OK';
+            
             // Calculate inventory value at current market prices
             let inventoryValue = 0;
             for (let key in gameState.inventory) {
@@ -2093,8 +2099,8 @@
             
             const finalScore = inventoryValue + gameState.cash;
 
-            // Save to localStorage leaderboard
-            saveToLeaderboard(finalScore);
+            // Save to localStorage leaderboard (save completed days, not the over-day)
+            saveToLeaderboard(finalScore, gameState.day > gameState.maxDays ? gameState.maxDays : gameState.day);
 
             let title, message;
             
@@ -2123,6 +2129,9 @@
         
         // Reset game
         function resetGame() {
+            // Reset modal button back to Continue
+            const modalBtn = document.querySelector('.modal-btn');
+            modalBtn.textContent = 'Continue';
             gameState = {
                 cash: 2000,
                 health: 100,
@@ -2160,7 +2169,7 @@
         }
         
         // Save score to leaderboard
-        function saveToLeaderboard(score) {
+        function saveToLeaderboard(score, days) {
             const leaderboard = getLeaderboard();
             const today = new Date().toLocaleDateString();
             
@@ -2168,7 +2177,7 @@
                 score: score,
                 date: today,
                 rank: getRank(score),
-                days: gameState.day
+                days: days
             });
             
             // Sort by score descending, keep top 10
